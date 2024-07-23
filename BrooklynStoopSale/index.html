@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stoop Sale</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="text-wrapper">
+      <h2>August 14 3pm-7pm Brooklyn <i class="fa-solid fa-tag"></i> &nbsp;</h2>
+      <h2>August 14 3pm-7pm Brooklyn <i class="fa-solid fa-tag"></i>&nbsp;</h2>
+      <h2>August 14 3pm-7pm Brooklyn <i class="fa-solid fa-tag"></i>&nbsp;</h2>
+      <h2>August 14 3pm-7pm Brooklyn <i class="fa-solid fa-tag"></i></h2>
+  </div>
+  
+  <!--intro part -->
+  <div class="container">
+    
+    <div class="text-container">
+      <center><h2>Join us for a treasure hunt at our Stoop Sale!</h2></center>
+      <center><p>Discover hidden gems, vintage finds, and bargains galore right on our doorstep. Don't miss out—come browse, shop, and score amazing deals with us!</p>
+      <p> Between 2nd Ave & Court St</p></center>
+      
+      <div id="countdown">
+          <div class="time-unit">
+              <span id="days">00</span>
+              <span class="label">Days</span>
+          </div>
+          <span class="separator">:</span>
+          <div class="time-unit">
+              <span id="hours">00</span>
+              <span class="label">Hours</span>
+          </div>
+          <span class="separator">:</span>
+          <div class="time-unit">
+              <span id="minutes">00</span>
+              <span class="label">Minutes</span>
+          </div>
+          <span class="separator">:</span>
+          <div class="time-unit">
+              <span id="seconds">00</span>
+              <span class="label">Seconds</span>
+          </div>
+      </div>
+    </div>
+
+    <!-- image gallery for showing stoop sale-->
+    <div class="img-container">
+      <div class="letter-image">
+        <p class="hover-text">hover over your invitation :)</p>
+        <div class="animated-mail">
+          <div class="back-fold"></div>
+          <div class="letter">
+            <div class="letter-border"></div>
+            <div class="letter-title"></div>
+            <div class="letter-context"></div>
+            <div class="letter-stamp">
+              <div class="letter-stamp-inner"></div>
+            </div>
+          </div>
+          <div class="top-fold"></div>
+          <div class="body"></div>
+          <div class="left-fold"></div>
+        </div>
+        <div class="shadow"></div>
+        <img src="assets/letterarrow.png" class="arrow-image" alt="Arrow pointing at the letter">
+      </div>
+    </div>
+  
+  </div>
+
+  <div class="img-container">
+    <img src="assets/brooklyn2.jpg" class="brooklyn-image">
+    <div class="nav-overlay">
+      <nav>
+        <ul>
+          <li><a href="#t-shirts">T-Shirts</a></li>
+          <li><a href="#jeans">Jeans</a></li>
+          <li><a href="#jackets">Jackets</a></li>
+          <li><a href="#vintage-pieces">Vintage Pieces</a></li>
+          <li><a href="#shoes">Shoes</a></li>
+          <li><a href="#accessories">Accessories</a></li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+
+  <div class="map-location">
+    <p>
+      <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6051.496714765716!2d-73.99986108882408!3d40.67951323948518!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a585c181957%3A0x50e694b8c1ef75b2!2s2nd%20Pl%20%26%20Court%20St%2C%20Brooklyn%2C%20NY%2011231!5e0!3m2!1sen!2sus!4v1720736513580!5m2!1sen!2sus" width="900" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </p>
+  </div>
+  
+  <script>
+    function getTimeRemaining(endTime) {
+        const total = Date.parse(endTime) - Date.parse(new Date());
+        const seconds = Math.floor((total / 1000) % 60);
+        const minutes = Math.floor((total / 1000 / 60) % 60);
+        const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
+        const days = Math.floor(total / (1000 * 60 * 60 * 24));
+
+        return {
+            total, 
+            days,
+            hours,
+            minutes,
+            seconds
+        };
+    }
+
+    function initializeClock(id, endTime) {
+        const clock = document.getElementById(id);
+        const daysSpan = clock.querySelector('#days');
+        const hoursSpan = clock.querySelector('#hours');
+        const minutesSpan = clock.querySelector('#minutes');
+        const secondsSpan = clock.querySelector('#seconds');
+
+        function updateClock() {
+            const t = getTimeRemaining(endTime);
+
+            daysSpan.innerHTML = t.days;
+            hoursSpan.innerHTML = ('0' + t.hours).slice(-2);
+            minutesSpan.innerHTML = ('0' + t.minutes).slice(-2);
+            secondsSpan.innerHTML = ('0' + t.seconds).slice(-2);
+
+            if (t.total <= 0) {
+                clearInterval(timeinterval);
+                clock.innerHTML = "EXPIRED";
+            } else {
+                daysSpan.innerHTML = ('0' + t.days).slice(-2);
+                hoursSpan.innerHTML = ('0' + t.hours).slice(-2);
+                minutesSpan.innerHTML = ('0' + t.minutes).slice(-2);
+                secondsSpan.innerHTML = ('0' + t.seconds).slice(-2);
+            }
+        }
+
+        updateClock();
+        const timeinterval = setInterval(updateClock, 1000);
+    }
+
+    const now = new Date();
+    const deadline = new Date(Date.parse(now) + 34 * 24 * 60 * 60 * 1000);
+    initializeClock('countdown', deadline);
+  </script>
+
+  <footer>
+    <div class="closing-container">
+      <p>stoopsale@gmail.com</p>
+      <p>123-456-7890</p>
+    </div>
+    <div class="social-icons">
+      <img src="/assets/instagram.jpg">
+    </div>
+  </footer>
+</body>
+</html>
