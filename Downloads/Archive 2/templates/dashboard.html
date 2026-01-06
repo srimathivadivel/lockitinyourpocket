@@ -1,0 +1,125 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- Today's Summary -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h3>Today's Summary</h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h4>Sleep Quality</h4>
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: {{ sleep_quality }}%">
+                            {{ sleep_quality }}%
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <h4>Exercise Goals</h4>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ exercise_progress }}%">
+                            {{ exercise_progress }}%
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <h4>Mood Level</h4>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ mood_level }}%">
+                            {{ mood_level }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Activities -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h3>Upcoming Activities</h3>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for activity in upcoming_activities %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ activity.name }}
+                        <span class="badge bg-primary rounded-pill">{{ activity.time }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Progress -->
+    <div class="col-md-12 mb-4">
+        <div class="section">
+            <h2>Recent Progress</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <div id="speechChart"></div>
+                </div>
+                <div class="col-md-6">
+                    <div id="sleepChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Today's Recommendations</h3>
+            </div>
+            <div class="card-body">
+                {% for category, recommendations in recommendations.items() %}
+                <div class="mb-4">
+                    <h4>{{ category }}</h4>
+                    <ul class="list-group">
+                        {% for rec in recommendations %}
+                        <li class="list-group-item">{{ rec }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Speech Progress Chart
+    const speechData = {{ speech_data | tojson }};
+    Plotly.newPlot('speechChart', [{
+        x: speechData.dates,
+        y: speechData.scores,
+        type: 'scatter',
+        name: 'Speech Analysis Score'
+    }], {
+        title: 'Speech Analysis Progress',
+        xaxis: { title: 'Date' },
+        yaxis: { title: 'Score' }
+    });
+
+    // Sleep Quality Chart
+    const sleepData = {{ sleep_data | tojson }};
+    Plotly.newPlot('sleepChart', [{
+        x: sleepData.dates,
+        y: sleepData.quality,
+        type: 'bar',
+        name: 'Sleep Quality'
+    }], {
+        title: 'Sleep Quality Trend',
+        xaxis: { title: 'Date' },
+        yaxis: { title: 'Quality (%)' }
+    });
+</script>
+{% endblock %}

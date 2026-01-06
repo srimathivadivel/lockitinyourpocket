@@ -1,0 +1,220 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="section">
+    <h2>Nutrition Tracking</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Log Meal</h3>
+                </div>
+                <div class="card-body">
+                    <form id="nutritionForm">
+                        <div class="mb-3">
+                            <label class="form-label">Meal Type</label>
+                            <select class="form-select" name="meal_type" required>
+                                <option value="breakfast">Breakfast</option>
+                                <option value="lunch">Lunch</option>
+                                <option value="dinner">Dinner</option>
+                                <option value="snack">Snack</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Foods Consumed</label>
+                            <div id="foodItems">
+                                <div class="food-item mb-2">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="food_items[]" 
+                                               placeholder="Enter food item" required>
+                                        <input type="number" class="form-control" name="portions[]" 
+                                               placeholder="Portions" min="0.5" step="0.5" required>
+                                        <button type="button" class="btn btn-danger remove-food">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary mt-2" id="addFood">
+                                <i class="fas fa-plus"></i> Add Food Item
+                            </button>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Difficulty with:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="difficulties[]" value="swallowing">
+                                <label class="form-check-label">Swallowing</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="difficulties[]" value="chewing">
+                                <label class="form-check-label">Chewing</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="difficulties[]" value="appetite">
+                                <label class="form-check-label">Poor Appetite</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Log Meal</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Today's Summary</h3>
+                </div>
+                <div class="card-body">
+                    <div id="nutritionSummary">
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <h5>Calories</h5>
+                                <div class="progress">
+                                    <div id="calorieProgress" class="progress-bar" role="progressbar"></div>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <h5>Protein</h5>
+                                <div class="progress">
+                                    <div id="proteinProgress" class="progress-bar bg-success" role="progressbar"></div>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <h5>Hydration</h5>
+                                <div class="progress">
+                                    <div id="hydrationProgress" class="progress-bar bg-info" role="progressbar"></div>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <h5>Fiber</h5>
+                                <div class="progress">
+                                    <div id="fiberProgress" class="progress-bar bg-warning" role="progressbar"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recommendations</h3>
+                </div>
+                <div class="card-body">
+                    <div id="recommendations" class="list-group">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Handle adding new food items
+document.getElementById('addFood').addEventListener('click', function() {
+    const foodItems = document.getElementById('foodItems');
+    const newItem = document.createElement('div');
+    newItem.className = 'food-item mb-2';
+    newItem.innerHTML = `
+        <div class="input-group">
+            <input type="text" class="form-control" name="food_items[]" 
+                   placeholder="Enter food item" required>
+            <input type="number" class="form-control" name="portions[]" 
+                   placeholder="Portions" min="0.5" step="0.5" required>
+            <button type="button" class="btn btn-danger remove-food">
+                <i class="fas fa-minus"></i>
+            </button>
+        </div>
+    `;
+    foodItems.appendChild(newItem);
+});
+
+// Handle removing food items
+document.getElementById('foodItems').addEventListener('click', function(e) {
+    if (e.target.closest('.remove-food')) {
+        const foodItem = e.target.closest('.food-item');
+        if (document.getElementsByClassName('food-item').length > 1) {
+            foodItem.remove();
+        }
+    }
+});
+
+// Handle form submission
+document.getElementById('nutritionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch("{{ url_for('log_nutrition') }}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            updateNutritionSummary(data.summary);
+            updateRecommendations(data.recommendations);
+            this.reset();
+            alert('Meal logged successfully!');
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while logging meal');
+    });
+});
+
+function updateNutritionSummary(summary) {
+    // Update progress bars
+    document.getElementById('calorieProgress').style.width = summary.calories.percentage + '%';
+    document.getElementById('calorieProgress').textContent = summary.calories.value + ' / ' + summary.calories.target + ' cal';
+    
+    document.getElementById('proteinProgress').style.width = summary.protein.percentage + '%';
+    document.getElementById('proteinProgress').textContent = summary.protein.value + ' / ' + summary.protein.target + 'g';
+    
+    document.getElementById('hydrationProgress').style.width = summary.hydration.percentage + '%';
+    document.getElementById('hydrationProgress').textContent = summary.hydration.value + ' / ' + summary.hydration.target + ' cups';
+    
+    document.getElementById('fiberProgress').style.width = summary.fiber.percentage + '%';
+    document.getElementById('fiberProgress').textContent = summary.fiber.value + ' / ' + summary.fiber.target + 'g';
+}
+
+function updateRecommendations(recommendations) {
+    const recList = document.getElementById('recommendations');
+    recList.innerHTML = '';
+    
+    recommendations.forEach(rec => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item';
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>${rec.text}</div>
+                <span class="badge bg-primary">${rec.category}</span>
+            </div>
+        `;
+        recList.appendChild(item);
+    });
+}
+
+// Initialize with example data
+updateNutritionSummary({
+    calories: { value: 1200, target: 2000, percentage: 60 },
+    protein: { value: 45, target: 70, percentage: 64 },
+    hydration: { value: 6, target: 8, percentage: 75 },
+    fiber: { value: 20, target: 25, percentage: 80 }
+});
+
+updateRecommendations([
+    { text: "Consider adding more protein-rich foods to your diet", category: "Protein" },
+    { text: "Try eating smaller, more frequent meals", category: "Portions" },
+    { text: "Stay hydrated throughout the day", category: "Hydration" }
+]);
+</script>
+{% endblock %}

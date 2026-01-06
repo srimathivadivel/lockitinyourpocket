@@ -1,0 +1,17 @@
+{
+    "user_id": "test_user",
+    "date": "2025-01-28",
+    "analysis_results": {
+        "risk_score": 0.11,
+        "risk_factors": {
+            "high_tremor": 0,
+            "irregular_speech": 0,
+            "voice_instability": 0
+        },
+        "recommendations": [
+            "No significant indicators of Parkinson's speech patterns detected. Continue regular monitoring.",
+            "Notable patterns observed in speech energy distribution.",
+            "Significant variations detected in voice stability measurements."
+        ]
+    }
+}

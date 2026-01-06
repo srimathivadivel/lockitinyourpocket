@@ -1,0 +1,221 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="section">
+    <h2>Exercise Planning</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Daily Exercise Plan</h3>
+                </div>
+                <div class="card-body">
+                    <form id="exerciseForm">
+                        <div class="mb-3">
+                            <label class="form-label">Mobility Level</label>
+                            <select class="form-select" name="mobility_level" required>
+                                <option value="high">High - Can move freely</option>
+                                <option value="moderate">Moderate - Some limitations</option>
+                                <option value="limited">Limited - Significant restrictions</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Energy Level Today (1-10)</label>
+                            <input type="range" class="form-range" name="energy_level" 
+                                   min="1" max="10" value="5" id="energyLevel">
+                            <div class="text-center" id="energyValue">5</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Generate Plan</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Today's Exercises</h3>
+                </div>
+                <div class="card-body">
+                    <div id="exercisePlan" class="d-none">
+                        <div class="list-group" id="exerciseList">
+                        </div>
+                        <div class="mt-4">
+                            <button class="btn btn-success" id="startWorkout">
+                                <i class="fas fa-play"></i> Start Workout
+                            </button>
+                        </div>
+                    </div>
+                    <div id="noExercises" class="text-center">
+                        <p class="text-muted">Generate a plan to see exercises</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Exercise Timer Modal -->
+    <div class="modal fade" id="exerciseModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Exercise Session</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <h2 id="currentExercise"></h2>
+                    <div class="display-1 mb-4" id="exerciseTimer">00:00</div>
+                    <div class="progress mb-4">
+                        <div id="exerciseProgress" class="progress-bar" role="progressbar"></div>
+                    </div>
+                    <p id="exerciseNote" class="lead"></p>
+                    <div class="mt-4">
+                        <button class="btn btn-lg btn-primary me-2" id="pauseExercise">
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                        <button class="btn btn-lg btn-success" id="nextExercise">
+                            <i class="fas fa-forward"></i> Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentExercises = [];
+let currentExerciseIndex = 0;
+let exerciseTimer;
+let timeLeft;
+let isPaused = false;
+
+// Update energy level display
+document.getElementById('energyLevel').addEventListener('input', function(e) {
+    document.getElementById('energyValue').textContent = e.target.value;
+});
+
+// Handle exercise form submission
+document.getElementById('exerciseForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch("{{ url_for('start_exercise') }}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            displayExercisePlan(data.plan);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while generating exercise plan');
+    });
+});
+
+function displayExercisePlan(plan) {
+    currentExercises = plan;
+    const exerciseList = document.getElementById('exerciseList');
+    exerciseList.innerHTML = '';
+    
+    plan.forEach((exercise, index) => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item';
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">${exercise.activity_type}</h5>
+                    <p class="mb-1">${exercise.notes}</p>
+                </div>
+                <span class="badge bg-primary rounded-pill">${exercise.duration} min</span>
+            </div>
+        `;
+        exerciseList.appendChild(item);
+    });
+    
+    document.getElementById('noExercises').classList.add('d-none');
+    document.getElementById('exercisePlan').classList.remove('d-none');
+}
+
+// Handle starting workout
+document.getElementById('startWorkout').addEventListener('click', function() {
+    if (currentExercises.length > 0) {
+        currentExerciseIndex = 0;
+        startExercise();
+        new bootstrap.Modal(document.getElementById('exerciseModal')).show();
+    }
+});
+
+function startExercise() {
+    const exercise = currentExercises[currentExerciseIndex];
+    document.getElementById('currentExercise').textContent = exercise.activity_type;
+    document.getElementById('exerciseNote').textContent = exercise.notes;
+    
+    timeLeft = exercise.duration * 60; // Convert to seconds
+    updateExerciseTimer();
+    
+    if (exerciseTimer) clearInterval(exerciseTimer);
+    exerciseTimer = setInterval(() => {
+        if (!isPaused) {
+            timeLeft--;
+            updateExerciseTimer();
+            
+            if (timeLeft <= 0) {
+                clearInterval(exerciseTimer);
+                if (currentExerciseIndex < currentExercises.length - 1) {
+                    currentExerciseIndex++;
+                    startExercise();
+                } else {
+                    alert('Workout completed!');
+                    bootstrap.Modal.getInstance(document.getElementById('exerciseModal')).hide();
+                }
+            }
+        }
+    }, 1000);
+}
+
+function updateExerciseTimer() {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    document.getElementById('exerciseTimer').textContent = 
+        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    const exercise = currentExercises[currentExerciseIndex];
+    const progress = ((exercise.duration * 60 - timeLeft) / (exercise.duration * 60)) * 100;
+    const progressBar = document.getElementById('exerciseProgress');
+    progressBar.style.width = progress + '%';
+    progressBar.setAttribute('aria-valuenow', progress);
+}
+
+// Handle pause/resume
+document.getElementById('pauseExercise').addEventListener('click', function() {
+    isPaused = !isPaused;
+    this.innerHTML = isPaused ? 
+        '<i class="fas fa-play"></i> Resume' : 
+        '<i class="fas fa-pause"></i> Pause';
+});
+
+// Handle next exercise
+document.getElementById('nextExercise').addEventListener('click', function() {
+    if (currentExerciseIndex < currentExercises.length - 1) {
+        currentExerciseIndex++;
+        startExercise();
+    } else {
+        alert('Workout completed!');
+        bootstrap.Modal.getInstance(document.getElementById('exerciseModal')).hide();
+    }
+});
+
+// Clean up timer when modal is closed
+document.getElementById('exerciseModal').addEventListener('hidden.bs.modal', function() {
+    if (exerciseTimer) clearInterval(exerciseTimer);
+});
+</script>
+{% endblock %}

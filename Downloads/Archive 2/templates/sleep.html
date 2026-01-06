@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="section">
+    <h2>Sleep Tracking</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Log Sleep</h3>
+                </div>
+                <div class="card-body">
+                    <form id="sleepForm" method="POST" action="{{ url_for('log_sleep') }}">
+                        <div class="mb-3">
+                            <label for="duration" class="form-label">Sleep Duration (hours)</label>
+                            <input type="number" class="form-control" id="duration" name="duration" 
+                                   min="0" max="24" step="0.5" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quality" class="form-label">Sleep Quality (1-10)</label>
+                            <input type="range" class="form-range" id="quality" name="quality" 
+                                   min="1" max="10" value="5">
+                            <div class="text-center" id="qualityValue">5</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="bedtime" class="form-label">Bedtime</label>
+                            <input type="time" class="form-control" id="bedtime" name="bedtime" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="wake_time" class="form-label">Wake Time</label>
+                            <input type="time" class="form-control" id="wake_time" name="wake_time" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sleep Disturbances</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="disturbances" value="restless_legs">
+                                <label class="form-check-label">Restless Legs</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="disturbances" value="night_sweats">
+                                <label class="form-check-label">Night Sweats</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="disturbances" value="insomnia">
+                                <label class="form-check-label">Insomnia</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Log Sleep</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Sleep Trends</h3>
+                </div>
+                <div class="card-body">
+                    <div id="sleepChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Update quality value display
+    document.getElementById('quality').addEventListener('input', function(e) {
+        document.getElementById('qualityValue').textContent = e.target.value;
+    });
+
+    // Handle form submission
+    document.getElementById('sleepForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch("{{ url_for('log_sleep') }}", {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving sleep data');
+        });
+    });
+
+    // Example sleep data visualization
+    const sleepData = {
+        x: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        y: [7.5, 6.8, 7.2, 8.0, 6.5, 7.8, 7.0],
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Hours Slept'
+    };
+
+    const layout = {
+        title: 'Sleep Duration Past Week',
+        xaxis: { title: 'Day' },
+        yaxis: { title: 'Hours' }
+    };
+
+    Plotly.newPlot('sleepChart', [sleepData], layout);
+</script>
+{% endblock %}

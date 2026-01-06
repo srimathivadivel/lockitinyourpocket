@@ -1,0 +1,162 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="section">
+    <h2>Speech Analysis</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Record Speech</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <button id="recordButton" class="btn btn-primary btn-lg">
+                            <i class="fas fa-microphone"></i>
+                            <span id="recordText">Start Recording</span>
+                        </button>
+                        <div id="timer" class="mt-2 display-4 d-none">10</div>
+                    </div>
+                    <div class="alert alert-info">
+                        <h4>Instructions:</h4>
+                        <ol>
+                            <li>Find a quiet place</li>
+                            <li>Click "Start Recording"</li>
+                            <li>Read the following text clearly:</li>
+                            <p class="mt-2 p-3 bg-light">"The rainbow is a division of white light into many beautiful colors. These take the shape of a long round arch, with its path high above, and its two ends apparently beyond the horizon."</p>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Analysis Results</h3>
+                </div>
+                <div class="card-body">
+                    <div id="results" class="d-none">
+                        <div class="mb-4">
+                            <h4>Risk Score</h4>
+                            <div class="progress">
+                                <div id="riskScore" class="progress-bar" role="progressbar"></div>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4>Speech Patterns</h4>
+                            <ul id="patterns" class="list-group">
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Recommendations</h4>
+                            <ul id="recommendations" class="list-group">
+                            </ul>
+                        </div>
+                    </div>
+                    <div id="noResults" class="text-center">
+                        <p class="text-muted">Record speech to see analysis results</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let isRecording = false;
+let timer;
+
+document.getElementById('recordButton').addEventListener('click', function() {
+    if (!isRecording) {
+        startRecording();
+    }
+});
+
+function startRecording() {
+    isRecording = true;
+    const button = document.getElementById('recordButton');
+    const timerDisplay = document.getElementById('timer');
+    button.disabled = true;
+    button.classList.replace('btn-primary', 'btn-danger');
+    document.getElementById('recordText').textContent = 'Recording...';
+    timerDisplay.classList.remove('d-none');
+    
+    let timeLeft = 10;
+    timer = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = timeLeft;
+        if (timeLeft <= 0) {
+            stopRecording();
+        }
+    }, 1000);
+    
+    // Start recording
+    fetch("{{ url_for('record_speech') }}", {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            displayResults(data.analysis);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred during recording');
+    })
+    .finally(() => {
+        stopRecording();
+    });
+}
+
+function stopRecording() {
+    isRecording = false;
+    clearInterval(timer);
+    const button = document.getElementById('recordButton');
+    const timerDisplay = document.getElementById('timer');
+    button.disabled = false;
+    button.classList.replace('btn-danger', 'btn-primary');
+    document.getElementById('recordText').textContent = 'Start Recording';
+    timerDisplay.classList.add('d-none');
+}
+
+function displayResults(analysis) {
+    document.getElementById('noResults').classList.add('d-none');
+    document.getElementById('results').classList.remove('d-none');
+    
+    // Update risk score
+    const riskScore = document.getElementById('riskScore');
+    const score = Math.round(analysis.risk_score * 100);
+    riskScore.style.width = score + '%';
+    riskScore.textContent = score + '%';
+    riskScore.className = 'progress-bar ' + 
+        (score < 30 ? 'bg-success' : 
+         score < 70 ? 'bg-warning' : 
+         'bg-danger');
+    
+    // Update patterns
+    const patternsList = document.getElementById('patterns');
+    patternsList.innerHTML = '';
+    analysis.patterns.forEach(pattern => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item';
+        li.textContent = pattern;
+        patternsList.appendChild(li);
+    });
+    
+    // Update recommendations
+    const recommendationsList = document.getElementById('recommendations');
+    recommendationsList.innerHTML = '';
+    analysis.recommendations.forEach(rec => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item';
+        li.textContent = rec;
+        recommendationsList.appendChild(li);
+    });
+}
+</script>
+{% endblock %}

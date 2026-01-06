@@ -1,0 +1,229 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="section">
+    <h2>Mental Health Check-in</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Daily Check-in</h3>
+                </div>
+                <div class="card-body">
+                    <form id="mentalHealthForm">
+                        <div class="mb-4">
+                            <label class="form-label">How is your mood today?</label>
+                            <input type="range" class="form-range" name="mood" 
+                                   min="1" max="10" value="5" id="moodLevel">
+                            <div class="d-flex justify-content-between">
+                                <span>😢 Low</span>
+                                <span id="moodValue">5</span>
+                                <span>😊 High</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Stress Level</label>
+                            <input type="range" class="form-range" name="stress" 
+                                   min="1" max="10" value="5" id="stressLevel">
+                            <div class="d-flex justify-content-between">
+                                <span>😌 Low</span>
+                                <span id="stressValue">5</span>
+                                <span>😰 High</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Anxiety Level</label>
+                            <input type="range" class="form-range" name="anxiety" 
+                                   min="1" max="10" value="5" id="anxietyLevel">
+                            <div class="d-flex justify-content-between">
+                                <span>😌 Low</span>
+                                <span id="anxietyValue">5</span>
+                                <span>😨 High</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">What's affecting you today?</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="factors[]" value="sleep">
+                                <label class="form-check-label">Sleep Issues</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="factors[]" value="physical">
+                                <label class="form-check-label">Physical Symptoms</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="factors[]" value="social">
+                                <label class="form-check-label">Social Isolation</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="factors[]" value="medication">
+                                <label class="form-check-label">Medication Side Effects</label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Additional Notes</label>
+                            <textarea class="form-control" name="notes" rows="3" 
+                                      placeholder="How are you feeling? What's on your mind?"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Submit Check-in</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Mood Trends</h3>
+                </div>
+                <div class="card-body">
+                    <div id="moodChart"></div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>Support & Resources</h3>
+                </div>
+                <div class="card-body">
+                    <div id="supportResources">
+                        <div class="alert alert-info">
+                            <h4>Crisis Support</h4>
+                            <p>If you're experiencing a mental health crisis:</p>
+                            <ul>
+                                <li>National Crisis Hotline: 988</li>
+                                <li>Emergency: 911</li>
+                            </ul>
+                        </div>
+                        
+                        <div id="recommendations" class="list-group">
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Relaxation Techniques</h5>
+                                    <small class="text-muted">5 min</small>
+                                </div>
+                                <p class="mb-1">Simple breathing exercises to reduce stress and anxiety</p>
+                            </a>
+                            
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Mindfulness Meditation</h5>
+                                    <small class="text-muted">10 min</small>
+                                </div>
+                                <p class="mb-1">Guided meditation for mental well-being</p>
+                            </a>
+                            
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Support Groups</h5>
+                                    <small class="text-muted">Community</small>
+                                </div>
+                                <p class="mb-1">Connect with others who understand your journey</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Update slider values
+['mood', 'stress', 'anxiety'].forEach(type => {
+    document.getElementById(type + 'Level').addEventListener('input', function(e) {
+        document.getElementById(type + 'Value').textContent = e.target.value;
+    });
+});
+
+// Handle form submission
+document.getElementById('mentalHealthForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch("{{ url_for('mental_health_check') }}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            updateMoodChart();
+            updateRecommendations(data.support);
+            this.reset();
+            ['mood', 'stress', 'anxiety'].forEach(type => {
+                document.getElementById(type + 'Value').textContent = '5';
+            });
+            alert('Check-in recorded successfully!');
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred during check-in');
+    });
+});
+
+function updateMoodChart() {
+    const dates = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const moodData = {
+        x: dates,
+        y: [7, 6, 8, 5, 6, 7, 8],
+        name: 'Mood',
+        type: 'scatter'
+    };
+    
+    const stressData = {
+        x: dates,
+        y: [4, 6, 3, 7, 5, 4, 3],
+        name: 'Stress',
+        type: 'scatter'
+    };
+    
+    const anxietyData = {
+        x: dates,
+        y: [3, 5, 4, 6, 4, 3, 2],
+        name: 'Anxiety',
+        type: 'scatter'
+    };
+    
+    const layout = {
+        title: 'Weekly Trends',
+        xaxis: { title: 'Day' },
+        yaxis: { title: 'Level', range: [0, 10] }
+    };
+    
+    Plotly.newPlot('moodChart', [moodData, stressData, anxietyData], layout);
+}
+
+function updateRecommendations(support) {
+    const recList = document.getElementById('recommendations');
+    recList.innerHTML = '';
+    
+    support.forEach(item => {
+        const a = document.createElement('a');
+        a.href = '#';
+        a.className = 'list-group-item list-group-item-action';
+        a.innerHTML = `
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">${item.title}</h5>
+                <small class="text-muted">${item.duration}</small>
+            </div>
+            <p class="mb-1">${item.description}</p>
+        `;
+        recList.appendChild(a);
+    });
+}
+
+// Initialize mood chart
+updateMoodChart();
+</script>
+{% endblock %}
